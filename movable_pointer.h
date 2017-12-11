@@ -55,11 +55,14 @@ class MovablePointer final {
     static_assert(std::is_base_of<MovablePointee<T>, T>::value,
                   "T must be a descendant of MovablePointee<T>");
   }
-  explicit MovablePointer(T* t) : t_(t) {
+  explicit MovablePointer(T* t) : MovablePointer() { *this = t; }
+  MovablePointer<T>& operator=(T* t) {
+    t_ = t;
     if (t_ != nullptr) {
       assert(t_->return_address_ == nullptr);
       t_->return_address_ = this;
     }
+    return *this;
   }
 
   T& operator*() { return *t_; }

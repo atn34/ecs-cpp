@@ -62,7 +62,18 @@ TEST(MovablePointer, SwapNullNull) {
   EXPECT_EQ(nullptr, bp.get());
 }
 
-TEST(MovablePointee, ResizeVector) {
+TEST(MovablePointer, DestroyPointee) {
+  MovablePointer<T> p;
+  EXPECT_EQ(nullptr, p.get());
+  {
+    T a{1};
+    p = &a;
+    EXPECT_EQ(&a, p.get());
+  }
+  EXPECT_EQ(nullptr, p.get());
+}
+
+TEST(MovablePointer, ResizeVector) {
   std::vector<T> v;
   v.emplace_back(T{1});
 
