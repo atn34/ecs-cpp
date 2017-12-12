@@ -1,35 +1,39 @@
 #include <algorithm>
 #include <cassert>
-#include <type_traits>
 
 template <typename T>
 class MovablePointer;
 
 template <typename T>
-class MovablePointee {
+class MovablePointee : public T {
  public:
-  MovablePointee() : return_address_(nullptr) {}
+  MovablePointee() : T(), return_address_(nullptr) {}
+  template <typename... Args>
+  MovablePointee(Args&&... args)
+      : T(std::forward<Args&&...>(args...)), return_address_(nullptr) {}
 
   MovablePointee(const MovablePointee<T>&) = delete;
   MovablePointee<T>& operator=(const MovablePointee<T>&) = delete;
 
   MovablePointee(MovablePointee<T>&& other) noexcept : MovablePointee() {
-    swap(other);
+    swap(*this, other);
   }
 
   MovablePointee<T>& operator=(MovablePointee<T>&& other) {
-    swap(other);
+    swap(*this, other);
     return *this;
   }
 
-  void swap(MovablePointee<T>& b) {
+  template <typename U>
+  friend void swap(MovablePointee<U>& a, MovablePointee<U>& b) {
     using std::swap;
-    swap(return_address_, b.return_address_);
-    if (return_address_ != nullptr) {
-      return_address_->t_ = static_cast<T*>(this);
+    swap(static_cast<T&>(a), static_cast<T&>(b));
+    swap(a.return_address_, b.return_address_);
+    if (a.return_address_ != nullptr) {
+      a.return_address_->t_ = &a;
     }
     if (b.return_address_ != nullptr) {
-      b.return_address_->t_ = static_cast<T*>(&b);
+      b.return_address_->t_ = &b;
     }
   }
 
@@ -51,12 +55,11 @@ class MovablePointee {
 template <typename T>
 class MovablePointer final {
  public:
-  MovablePointer() : t_(nullptr) {
-    static_assert(std::is_base_of<MovablePointee<T>, T>::value,
-                  "T must be a descendant of MovablePointee<T>");
+  MovablePointer() : t_(nullptr) {}
+  explicit MovablePointer(MovablePointee<T>* t) : MovablePointer() {
+    *this = t;
   }
-  explicit MovablePointer(T* t) : MovablePointer() { *this = t; }
-  MovablePointer<T>& operator=(T* t) {
+  MovablePointer<T>& operator=(MovablePointee<T>* t) {
     t_ = t;
     if (t_ != nullptr) {
       assert(t_->return_address_ == nullptr);
@@ -65,9 +68,9 @@ class MovablePointer final {
     return *this;
   }
 
-  T& operator*() { return *t_; }
-  T* operator->() { return t_; }
-  T* get() { return t_; }
+  T& operator*() { return *get(); }
+  T* operator->() { return get(); }
+  T* get() { return static_cast<T*>(t_); }
 
   MovablePointer(const MovablePointer<T>&) = delete;
   MovablePointer<T>& operator=(const MovablePointer<T>&) = delete;
@@ -100,6 +103,9 @@ class MovablePointer final {
   }
 
  private:
-  T* t_;
+  MovablePointee<T>* t_;
   friend class MovablePointee<T>;
+
+  template <typename U>
+  friend void swap(MovablePointee<U>& a, MovablePointee<U>& b);
 };

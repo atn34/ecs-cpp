@@ -3,27 +3,20 @@
 
 #include "movable_pointer.h"
 
-struct T : public MovablePointee<T> {
+struct T {
   explicit T() : x(0) {}
   explicit T(int x_) : x(x_) {}
   int x;
 
   friend void swap(T& a, T& b) {
-    a.swap(b);
     using std::swap;
     swap(a.x, b.x);
-  }
-
-  T(T&& other) noexcept {
-    swap(other);
-    using std::swap;
-    swap(x, other.x);
   }
 };
 
 TEST(MovablePointer, SwapPointee) {
-  T a{1};
-  T b{2};
+  MovablePointee<T> a{1};
+  MovablePointee<T> b{2};
   MovablePointer<T> ap(&a);
   MovablePointer<T> bp(&b);
   swap(a, b);
@@ -34,8 +27,8 @@ TEST(MovablePointer, SwapPointee) {
 }
 
 TEST(MovablePointer, SwapPointer) {
-  T a{1};
-  T b{2};
+  MovablePointee<T> a{1};
+  MovablePointee<T> b{2};
   MovablePointer<T> ap(&a);
   MovablePointer<T> bp(&b);
   swap(ap, bp);
@@ -46,7 +39,7 @@ TEST(MovablePointer, SwapPointer) {
 }
 
 TEST(MovablePointer, SwapWithNull1) {
-  T a{1};
+  MovablePointee<T> a{1};
   MovablePointer<T> ap(&a);
   MovablePointer<T> bp;
   swap(ap, bp);
@@ -66,20 +59,24 @@ TEST(MovablePointer, DestroyPointee) {
   MovablePointer<T> p;
   EXPECT_EQ(nullptr, p.get());
   {
-    T a{1};
+    MovablePointee<T> a{1};
     p = &a;
     EXPECT_EQ(&a, p.get());
   }
   EXPECT_EQ(nullptr, p.get());
 }
 
-TEST(MovablePointer, ResizeVector) {
-  std::vector<T> v;
-  v.emplace_back(T{1});
+TEST(MovablePointer, ResizeVectorAndSwap) {
+  std::vector<MovablePointee<T>> v;
+  v.emplace_back(MovablePointee<T>{1});
 
   MovablePointer<T> p(&v[0]);
 
   v.resize(100);
+
+  EXPECT_EQ(1, p->x);
+
+  swap(v[0], v[1]);
 
   EXPECT_EQ(1, p->x);
 }
