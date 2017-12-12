@@ -37,7 +37,7 @@ class MovablePointee : public T {
     }
   }
 
-  virtual ~MovablePointee() {
+  ~MovablePointee() {
     if (return_address_ != nullptr) {
       return_address_->t_ = nullptr;
     }
