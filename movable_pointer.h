@@ -30,7 +30,7 @@ class MovablePointee final : public T {
   template <typename U>
   friend void swap(MovablePointee<U>& a, MovablePointee<U>& b) {
     using std::swap;
-    swap(static_cast<T&>(a), static_cast<T&>(b));
+    swap(static_cast<U&>(a), static_cast<U&>(b));
     swap(a.return_address_, b.return_address_);
     if (a.return_address_ != nullptr) {
       a.return_address_->t_ = &a;
