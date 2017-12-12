@@ -8,7 +8,7 @@ template <typename T>
 class MovablePointer;
 
 template <typename T>
-class MovablePointee : public T {
+class MovablePointee final : public T {
  public:
   MovablePointee() : T(), return_address_(nullptr) {}
   template <typename... Args>
