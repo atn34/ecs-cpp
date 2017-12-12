@@ -1,3 +1,6 @@
+#ifndef MOVABLE_POINTER_H
+#define MOVABLE_POINTER_H
+
 #include <algorithm>
 #include <cassert>
 
@@ -109,3 +112,5 @@ class MovablePointer final {
   template <typename U>
   friend void swap(MovablePointee<U>& a, MovablePointee<U>& b);
 };
+
+#endif /* ifndef MOVABLE_POINTER_H */
