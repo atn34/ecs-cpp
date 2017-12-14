@@ -6,6 +6,33 @@
 
 template <typename T>
 class MovablePointer;
+template <typename T>
+class MovablePointee;
+
+template <typename T>
+void swap(MovablePointer<T>& a, MovablePointer<T>& b) {
+  using std::swap;
+  swap(a.t_, b.t_);
+  if (a.t_ != nullptr) {
+    a.t_->return_address_ = &a;
+  }
+  if (b.t_ != nullptr) {
+    b.t_->return_address_ = &b;
+  }
+}
+
+template <typename T>
+void swap(MovablePointee<T>& a, MovablePointee<T>& b) {
+  using std::swap;
+  swap(static_cast<T&>(a), static_cast<T&>(b));
+  swap(a.return_address_, b.return_address_);
+  if (a.return_address_ != nullptr) {
+    a.return_address_->t_ = &a;
+  }
+  if (b.return_address_ != nullptr) {
+    b.return_address_->t_ = &b;
+  }
+}
 
 template <typename T>
 class MovablePointee final : public T {
@@ -27,19 +54,6 @@ class MovablePointee final : public T {
     return *this;
   }
 
-  template <typename U>
-  friend void swap(MovablePointee<U>& a, MovablePointee<U>& b) {
-    using std::swap;
-    swap(static_cast<U&>(a), static_cast<U&>(b));
-    swap(a.return_address_, b.return_address_);
-    if (a.return_address_ != nullptr) {
-      a.return_address_->t_ = &a;
-    }
-    if (b.return_address_ != nullptr) {
-      b.return_address_->t_ = &b;
-    }
-  }
-
   ~MovablePointee() {
     if (return_address_ != nullptr) {
       return_address_->t_ = nullptr;
@@ -47,12 +61,11 @@ class MovablePointee final : public T {
   }
 
  private:
-  friend class MovablePointer<T>;
-
-  template <typename U>
-  friend void swap(MovablePointer<U>& a, MovablePointer<U>& b);
-
   MovablePointer<T>* return_address_;
+
+  friend class MovablePointer<T>;
+  friend void swap<>(MovablePointer<T>& a, MovablePointer<T>& b);
+  friend void swap<>(MovablePointee<T>& a, MovablePointee<T>& b);
 };
 
 template <typename T>
@@ -87,18 +100,6 @@ class MovablePointer final {
     return *this;
   }
 
-  template <typename U>
-  friend void swap(MovablePointer<U>& a, MovablePointer<U>& b) {
-    using std::swap;
-    swap(a.t_, b.t_);
-    if (a.t_ != nullptr) {
-      a.t_->return_address_ = &a;
-    }
-    if (b.t_ != nullptr) {
-      b.t_->return_address_ = &b;
-    }
-  }
-
   ~MovablePointer() {
     if (t_ != nullptr) {
       t_->return_address_ = nullptr;
@@ -107,10 +108,10 @@ class MovablePointer final {
 
  private:
   MovablePointee<T>* t_;
-  friend class MovablePointee<T>;
 
-  template <typename U>
-  friend void swap(MovablePointee<U>& a, MovablePointee<U>& b);
+  friend class MovablePointee<T>;
+  friend void swap<>(MovablePointer<T>& a, MovablePointer<T>& b);
+  friend void swap<>(MovablePointee<T>& a, MovablePointee<T>& b);
 };
 
 #endif /* ifndef MOVABLE_POINTER_H */
