@@ -23,7 +23,7 @@ class World {
     add_entity_helper<0>(nullptr, components...);
   }
 
-  template <typename Lambda, typename Component, typename... Components>
+  template <typename Component, typename... Components, typename Lambda>
   void each(Lambda f) {
     for (auto& component : std::get<index<Component>()>(components_)) {
       std::tuple<Component*, Components*...> entity;

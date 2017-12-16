@@ -30,19 +30,19 @@ TEST(World, Each) {
   {
     int count = 0;
     auto lambda = [&count](std::tuple<A*, B*>&) { ++count; };
-    world.each<decltype(lambda), A, B>(lambda);
+    world.each<A, B>(lambda);
     EXPECT_EQ(1, count);
   }
   {
     int count = 0;
     auto lambda = [&count](std::tuple<A*>&) { ++count; };
-    world.each<decltype(lambda), A>(lambda);
+    world.each<A>(lambda);
     EXPECT_EQ(2, count);
   }
   {
     int count = 0;
     auto lambda = [&count](std::tuple<B*>&) { ++count; };
-    world.each<decltype(lambda), B>(lambda);
+    world.each<B>(lambda);
     EXPECT_EQ(2, count);
   }
 }
@@ -64,9 +64,9 @@ TEST(World, EachWithState) {
     EXPECT_EQ(count, c);
     ++c;
   };
-  world.each<decltype(lambda), C>(lambda);
+  world.each<C>(lambda);
   ++count;
-  world.each<decltype(lambda), C>(lambda);
+  world.each<C>(lambda);
   ++count;
-  world.each<decltype(lambda), C>(lambda);
+  world.each<C>(lambda);
 }
