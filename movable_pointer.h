@@ -24,7 +24,7 @@ void swap(MovablePointer<T>& a, MovablePointer<T>& b) {
 template <typename T>
 void swap(MovablePointee<T>& a, MovablePointee<T>& b) {
   using std::swap;
-  swap(static_cast<T&>(a), static_cast<T&>(b));
+  swap(a.pointee_, b.pointee_);
   swap(a.return_address_, b.return_address_);
   if (a.return_address_ != nullptr) {
     a.return_address_->t_ = &a;
@@ -35,12 +35,12 @@ void swap(MovablePointee<T>& a, MovablePointee<T>& b) {
 }
 
 template <typename T>
-class MovablePointee final : public T {
+class MovablePointee final {
  public:
-  MovablePointee() : T(), return_address_(nullptr) {}
+  MovablePointee() : return_address_(nullptr), pointee_() {}
   template <typename... Args>
   MovablePointee(Args&&... args)
-      : T(std::forward<Args&&...>(args...)), return_address_(nullptr) {}
+      : return_address_(nullptr), pointee_(std::forward<Args&&...>(args...)) {}
 
   MovablePointee(const MovablePointee<T>&) = delete;
   MovablePointee<T>& operator=(const MovablePointee<T>&) = delete;
@@ -60,8 +60,13 @@ class MovablePointee final : public T {
     }
   }
 
+  T& operator*() { return *get(); }
+  T* operator->() { return get(); }
+  T* get() { return &pointee_; }
+
  private:
   MovablePointer<T>* return_address_;
+  T pointee_;
 
   friend class MovablePointer<T>;
   friend void swap<>(MovablePointer<T>& a, MovablePointer<T>& b);
@@ -86,7 +91,7 @@ class MovablePointer final {
 
   T& operator*() { return *get(); }
   T* operator->() { return get(); }
-  T* get() { return static_cast<T*>(t_); }
+  T* get() { return t_ == nullptr ? nullptr : t_->get(); }
 
   MovablePointer(const MovablePointer<T>&) = delete;
   MovablePointer<T>& operator=(const MovablePointer<T>&) = delete;
