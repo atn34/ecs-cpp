@@ -32,9 +32,11 @@ class World {
   };
 
  public:
-  template <typename... Components>
-  void add_entity(Components... components) {
-    add_entity_helper<0>(nullptr, components...);
+  template <typename Component, typename... Components>
+  void add_entity(Component component, Components... components) {
+    auto* first = add_entity_helper<0>(nullptr, component);
+    auto* last = add_entity_helper<index<Component>()>(first, components...);
+    last->get()->next = first;
   }
 
   template <typename... Components>
@@ -77,6 +79,10 @@ class World {
   }
 
  private:
+  template <std::size_t PreviousIndex>
+  MovablePointee<IndexTag>* add_entity_helper(MovablePointee<IndexTag>* prev) {
+    return prev;
+  }
   template <std::size_t PreviousIndex, typename Component>
   MovablePointee<IndexTag>* add_entity_helper(MovablePointee<IndexTag>* prev,
                                               Component component) {
@@ -109,7 +115,7 @@ class World {
   }
   template <typename Entity, typename Component, typename... Components>
   bool each_helper(Entity& e, MovablePointer<IndexTag>* p) {
-    if (p->get() == nullptr || p->get()->index != index<Component>()) {
+    if (p->get()->index != index<Component>()) {
       return false;
     }
     std::get<index<Component>()>(e) =
