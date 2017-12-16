@@ -43,7 +43,7 @@ TEST(MovablePointer, SwapWithNull1) {
   MovablePointer<A> ap(&a);
   MovablePointer<A> bp;
   swap(ap, bp);
-  EXPECT_EQ(nullptr, ap.get());
+  EXPECT_EQ(nullptr, ap.pointer());
   EXPECT_EQ(1, bp->x);
 }
 
@@ -51,19 +51,19 @@ TEST(MovablePointer, SwapNullNull) {
   MovablePointer<A> ap;
   MovablePointer<A> bp;
   swap(ap, bp);
-  EXPECT_EQ(nullptr, ap.get());
-  EXPECT_EQ(nullptr, bp.get());
+  EXPECT_EQ(nullptr, ap.pointer());
+  EXPECT_EQ(nullptr, bp.pointer());
 }
 
 TEST(MovablePointer, DestroyPointee) {
   MovablePointer<A> p;
-  EXPECT_EQ(nullptr, p.get());
+  EXPECT_EQ(nullptr, p.pointer());
   {
     MovablePointee<A> a{1};
     p = &a;
-    EXPECT_EQ(a.get(), p.get());
+    EXPECT_EQ(&a, p.pointer());
   }
-  EXPECT_EQ(nullptr, p.get());
+  EXPECT_EQ(nullptr, p.pointer());
 }
 
 TEST(MovablePointer, ResizeVectorAndSwap) {

@@ -115,12 +115,12 @@ class World {
   }
   template <typename Entity, typename Component, typename... Components>
   bool each_helper(Entity& e, MovablePointer<IndexTag>* p) {
-    if (p->get()->index != index<Component>()) {
+    if ((*p)->index != index<Component>()) {
       return false;
     }
     std::get<index<Component>()>(e) =
         reinterpret_cast<MovablePointee<WithIndexTag<Component>>*>(p);
-    return each_helper(e, &p->get()->next);
+    return each_helper(e, &(*p)->next);
   }
 
   std::tuple<std::vector<MovablePointee<WithIndexTag<AllComponents>>>...>

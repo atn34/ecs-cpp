@@ -60,7 +60,6 @@ class MovablePointee final {
     }
   }
 
-  T& operator*() { return *get(); }
   T* operator->() { return get(); }
   T* get() { return &pointee_; }
 
@@ -89,9 +88,8 @@ class MovablePointer final {
     return *this;
   }
 
-  T& operator*() { return *get(); }
-  T* operator->() { return get(); }
-  T* get() { return t_ == nullptr ? nullptr : t_->get(); }
+  T* operator->() { return t_->get(); }
+  MovablePointee<T>* pointer() { return t_; }
 
   MovablePointer(const MovablePointer<T>&) = delete;
   MovablePointer<T>& operator=(const MovablePointer<T>&) = delete;
