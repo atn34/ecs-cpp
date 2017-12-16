@@ -22,7 +22,7 @@ class World {
  public:
   template <typename... Components>
   void add_entity(Components... components) {
-    add_entity_helper(nullptr, components...);
+    add_entity_helper<0>(nullptr, components...);
   }
 
   template <typename Component>
@@ -41,9 +41,11 @@ class World {
     T component;
   };
 
-  template <typename Component>
+  template <std::size_t PreviousIndex, typename Component>
   MovablePointee<IndexTag>* add_entity_helper(MovablePointee<IndexTag>* prev,
                                               Component component) {
+    static_assert(PreviousIndex < index<Component>() + 1,
+                  "Components must always appear in order");
     auto& component_vec = std::get<index<Component>()>(components_);
     component_vec.push_back({});
     auto& with_index_tag = component_vec.back();
@@ -55,12 +57,14 @@ class World {
     }
     return as_tag;
   }
-  template <typename Component, typename... Components>
+  template <std::size_t PreviousIndex, typename Component,
+            typename... Components>
   MovablePointee<IndexTag>* add_entity_helper(MovablePointee<IndexTag>* prev,
                                               Component component,
                                               Components... components) {
-    MovablePointee<IndexTag>* as_tag = add_entity_helper(prev, component);
-    return add_entity_helper(as_tag, components...);
+    MovablePointee<IndexTag>* as_tag =
+        add_entity_helper<PreviousIndex>(prev, component);
+    return add_entity_helper<index<Component>() + 1>(as_tag, components...);
   }
 
   std::tuple<std::vector<MovablePointee<WithIndexTag<AllComponents>>>...>
