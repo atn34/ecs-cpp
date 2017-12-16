@@ -23,6 +23,18 @@ class World {
     add_entity_helper<0>(nullptr, components...);
   }
 
+  template <typename Lambda, typename Component, typename... Components>
+  void each(Lambda f) {
+    for (auto& component : std::get<index<Component>()>(components_)) {
+      std::tuple<Component*, Components*...> entity;
+      std::get<0>(entity) = &component->component;
+      if (each_helper<decltype(entity), Components...>(entity,
+                                                       &component->next)) {
+        f(entity);
+      }
+    }
+  }
+
   template <typename Component>
   static constexpr std::size_t index() {
     return Index<Component, AllComponents...>::value;
@@ -63,6 +75,20 @@ class World {
     MovablePointee<IndexTag>* as_tag =
         add_entity_helper<PreviousIndex>(prev, component);
     return add_entity_helper<index<Component>() + 1>(as_tag, components...);
+  }
+
+  template <typename Entity>
+  bool each_helper(Entity&, MovablePointer<IndexTag>*) {
+    return true;
+  }
+  template <typename Entity, typename Component, typename... Components>
+  bool each_helper(Entity& e, MovablePointer<IndexTag>* p) {
+    if (p->get() == nullptr || p->get()->index != index<Component>()) {
+      return false;
+    }
+    std::get<index<Component>()>(e) =
+        &reinterpret_cast<WithIndexTag<Component>*>(p->get())->component;
+    return each_helper(e, &p->get()->next);
   }
 
   std::tuple<std::vector<MovablePointee<WithIndexTag<AllComponents>>>...>

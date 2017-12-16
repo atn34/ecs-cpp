@@ -1,4 +1,3 @@
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -11,18 +10,39 @@ TEST(Templates, TypeIndex) {
   World<A, B> world;
   EXPECT_EQ(0, world.index<A>());
   EXPECT_EQ(1, world.index<B>());
+}
+
+TEST(World, AddEntity) {
+  World<A, B> world;
 
   world.add_entity(A{});
   world.add_entity(A{}, B{});
   world.add_entity(B{});
 }
 
-TEST(World, AddEntity) {
+TEST(World, Each) {
   World<A, B> world;
-  EXPECT_EQ(0, world.index<A>());
-  EXPECT_EQ(1, world.index<B>());
 
   world.add_entity(A{});
   world.add_entity(A{}, B{});
   world.add_entity(B{});
+
+  {
+    int count = 0;
+    auto lambda = [&count](std::tuple<A*, B*>&) { ++count; };
+    world.each<decltype(lambda), A, B>(lambda);
+    EXPECT_EQ(1, count);
+  }
+  {
+    int count = 0;
+    auto lambda = [&count](std::tuple<A*>&) { ++count; };
+    world.each<decltype(lambda), A>(lambda);
+    EXPECT_EQ(2, count);
+  }
+  {
+    int count = 0;
+    auto lambda = [&count](std::tuple<B*>&) { ++count; };
+    world.each<decltype(lambda), B>(lambda);
+    EXPECT_EQ(2, count);
+  }
 }
