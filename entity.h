@@ -17,19 +17,55 @@ struct Index<T, U, Ts...>
 
 template <typename... AllComponents>
 class World {
+ private:
+  template <typename... Components>
+  friend class Entity;
+
+  struct IndexTag {
+    size_t index;
+    MovablePointer<IndexTag> next;
+  };
+
+  template <typename T>
+  struct WithIndexTag : public IndexTag {
+    T component;
+  };
+
  public:
   template <typename... Components>
   void add_entity(Components... components) {
     add_entity_helper<0>(nullptr, components...);
   }
 
+  template <typename... Components>
+  class Entity {
+   public:
+    Entity(World<AllComponents...>* world,
+           std::tuple<MovablePointee<WithIndexTag<Components>>*...>* components)
+        : this_(world), components_(components) {}
+
+    template <typename T>
+    T& get() {
+      return std::get<Index<T, Components...>::value>(*components_)
+          ->get()
+          ->component;
+    }
+
+   private:
+    World<AllComponents...>* this_;
+    std::tuple<MovablePointee<WithIndexTag<Components>>*...>* components_;
+  };
+
   template <typename Component, typename... Components, typename Lambda>
   void each(Lambda f) {
     for (auto& component : std::get<index<Component>()>(components_)) {
-      std::tuple<Component*, Components*...> entity;
-      std::get<0>(entity) = &component->component;
-      if (each_helper<decltype(entity), Components...>(entity,
-                                                       &component->next)) {
+      std::tuple<MovablePointee<WithIndexTag<Component>>*,
+                 MovablePointee<WithIndexTag<Components>>*...>
+          components;
+      std::get<0>(components) = &component;
+      if (each_helper<decltype(components), Components...>(components,
+                                                           &component->next)) {
+        Entity<Component, Components...> entity(this, &components);
         f(entity);
       }
     }
@@ -41,16 +77,6 @@ class World {
   }
 
  private:
-  struct IndexTag {
-    size_t index;
-    MovablePointer<IndexTag> next;
-  };
-
-  template <typename T>
-  struct WithIndexTag : public IndexTag {
-    T component;
-  };
-
   template <std::size_t PreviousIndex, typename Component>
   MovablePointee<IndexTag>* add_entity_helper(MovablePointee<IndexTag>* prev,
                                               Component component) {
@@ -87,7 +113,7 @@ class World {
       return false;
     }
     std::get<index<Component>()>(e) =
-        &reinterpret_cast<WithIndexTag<Component>*>(p->get())->component;
+        reinterpret_cast<MovablePointee<WithIndexTag<Component>>*>(p);
     return each_helper(e, &p->get()->next);
   }
 

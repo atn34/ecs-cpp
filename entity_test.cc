@@ -21,7 +21,8 @@ TEST(World, AddEntity) {
 }
 
 TEST(World, Each) {
-  World<A, B> world;
+  typedef World<A, B> World;
+  World world;
 
   world.add_entity(A{});
   world.add_entity(A{}, B{});
@@ -29,19 +30,19 @@ TEST(World, Each) {
 
   {
     int count = 0;
-    auto lambda = [&count](std::tuple<A*, B*>&) { ++count; };
+    auto lambda = [&count](World::Entity<A, B>&) { ++count; };
     world.each<A, B>(lambda);
     EXPECT_EQ(1, count);
   }
   {
     int count = 0;
-    auto lambda = [&count](std::tuple<A*>&) { ++count; };
+    auto lambda = [&count](World::Entity<A>&) { ++count; };
     world.each<A>(lambda);
     EXPECT_EQ(2, count);
   }
   {
     int count = 0;
-    auto lambda = [&count](std::tuple<B*>&) { ++count; };
+    auto lambda = [&count](World::Entity<B>&) { ++count; };
     world.each<B>(lambda);
     EXPECT_EQ(2, count);
   }
@@ -52,15 +53,16 @@ struct C {
 };
 
 TEST(World, EachWithState) {
-  World<C> world;
+  typedef World<C> World;
+  World world;
 
   world.add_entity(C{});
   world.add_entity(C{});
   world.add_entity(C{});
 
   int count = 0;
-  auto lambda = [&count](std::tuple<C*>& entity) {
-    int& c = std::get<0>(entity)->c;
+  auto lambda = [&count](World::Entity<C>& entity) {
+    int& c = entity.get<C>().c;
     EXPECT_EQ(count, c);
     ++c;
   };
