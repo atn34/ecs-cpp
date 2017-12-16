@@ -46,3 +46,27 @@ TEST(World, Each) {
     EXPECT_EQ(2, count);
   }
 }
+
+struct C {
+  int c = 0;
+};
+
+TEST(World, EachWithState) {
+  World<C> world;
+
+  world.add_entity(C{});
+  world.add_entity(C{});
+  world.add_entity(C{});
+
+  int count = 0;
+  auto lambda = [&count](std::tuple<C*>& entity) {
+    int& c = std::get<0>(entity)->c;
+    EXPECT_EQ(count, c);
+    ++c;
+  };
+  world.each<decltype(lambda), C>(lambda);
+  ++count;
+  world.each<decltype(lambda), C>(lambda);
+  ++count;
+  world.each<decltype(lambda), C>(lambda);
+}
