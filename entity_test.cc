@@ -72,3 +72,29 @@ TEST(World, EachWithState) {
   ++count;
   world.each<C>(lambda);
 }
+
+TEST(World, RemoveEntity) {
+  typedef World<A, B, C> World;
+  World world;
+
+  world.add_entity(C{});
+  world.add_entity(C{});
+  world.add_entity(A{}, C{});
+
+  {
+    int count = 0;
+    auto lambda = [&count](World::Entity<C>&) { ++count; };
+    world.each<C>(lambda);
+    EXPECT_EQ(3, count);
+  }
+  {
+    auto lambda = [](World::Entity<A>& entity) { entity.remove(); };
+    world.each<A>(lambda);
+  }
+  {
+    int count = 0;
+    auto lambda = [&count](World::Entity<C>&) { ++count; };
+    world.each<C>(lambda);
+    EXPECT_EQ(2, count);
+  }
+}

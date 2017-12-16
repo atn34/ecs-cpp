@@ -53,6 +53,11 @@ class World {
           ->component;
     }
 
+    void remove() {
+      this_->remove(reinterpret_cast<MovablePointee<IndexTag>*>(
+          std::get<0>(*components_)));
+    }
+
    private:
     World<AllComponents...>* this_;
     std::tuple<MovablePointee<WithIndexTag<Components>>*...>* components_;
@@ -79,6 +84,41 @@ class World {
   }
 
  private:
+  template <std::size_t t>
+  struct identity {};
+
+  void remove(MovablePointee<IndexTag>* first) {
+    while (first != nullptr) {
+      MovablePointer<IndexTag> next;
+      using std::swap;
+      swap(next, (*first)->next);
+      remove_helper(identity<sizeof...(AllComponents) - 1>{}, first);
+      first = next.pointer();
+    }
+  }
+
+  void remove_helper(identity<0>, MovablePointee<IndexTag>* p) {
+    assert((*p)->index == 0);
+    auto& component_vec = std::get<0>(components_);
+    auto& top = component_vec.back();
+    using std::swap;
+    swap(top, reinterpret_cast<decltype(top)>(*p));
+    component_vec.pop_back();
+  }
+
+  template <std::size_t Index>
+  void remove_helper(identity<Index>, MovablePointee<IndexTag>* p) {
+    if ((*p)->index == Index) {
+      auto& component_vec = std::get<Index>(components_);
+      auto& top = component_vec.back();
+      using std::swap;
+      swap(top, reinterpret_cast<decltype(top)>(*p));
+      component_vec.pop_back();
+    } else {
+      remove_helper(identity<Index - 1>{}, p);
+    }
+  }
+
   template <std::size_t PreviousIndex>
   MovablePointee<IndexTag>* add_entity_helper(MovablePointee<IndexTag>* prev) {
     return prev;
