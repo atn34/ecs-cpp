@@ -1,9 +1,7 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
-#include <cstddef>
 #include <tuple>
-#include <type_traits>
 
 #include "movable_pointer.h"
 
