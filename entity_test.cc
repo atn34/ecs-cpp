@@ -118,3 +118,15 @@ TEST(World, RemoveEntity) {
     EXPECT_EQ(1, count);
   }
 }
+
+TEST(World, AddEntityWhileIterating) {
+  typedef World<A, B, C> World;
+  World world;
+
+  world.add_entity(C{});
+
+  world.each<C>([&](World::Entity<C>&) { world.add_entity(A{}, B{}); });
+  int count = 0;
+  world.each<A, B>([&](World::Entity<A, B>&) { ++count; });
+  EXPECT_EQ(1, count);
+}
