@@ -2,4 +2,4 @@
 
 set -euxo pipefail
 
-./a.out
+build/unit_tests

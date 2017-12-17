@@ -3,4 +3,4 @@
 set -euxo pipefail
 
 git clean -Xf
-rm -rf out
+rm -rf out build

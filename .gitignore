@@ -41,3 +41,5 @@ out
 coverage.info
 *.gcda
 *.gcno
+
+build/
