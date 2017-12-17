@@ -165,7 +165,8 @@ class World {
       return false;
     }
     std::get<TupleIndex>(e) =
-        reinterpret_cast<MovablePointee<WithIndexTag<Component>>*>(p);
+        reinterpret_cast<MovablePointee<WithIndexTag<Component>>*>(
+            p->pointer());
     return each_helper<Entity, TupleIndex + 1, Components...>(e, &(*p)->next);
   }
 

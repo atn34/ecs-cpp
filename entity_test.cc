@@ -130,3 +130,23 @@ TEST(World, AddEntityWhileIterating) {
   world.each<A, B>([&](World::Entity<A, B>&) { ++count; });
   EXPECT_EQ(1, count);
 }
+
+struct P {
+  int x = 0;
+};
+
+struct V {
+  int x = 0;
+};
+
+TEST(World, AsanRepro) {
+  typedef World<P, V> World;
+  World world;
+  world.add_entity(P{}, V{});
+  world.each<P, V>([](World::Entity<P, V>& e) {
+    auto& p = e.get<P>();
+    auto& v = e.get<V>();
+    if (p.x == v.x) {
+    }
+  });
+}
