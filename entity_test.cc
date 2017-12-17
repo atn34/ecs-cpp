@@ -80,7 +80,31 @@ TEST(World, RemoveEntity) {
   world.add_entity(C{});
   world.add_entity(C{});
   world.add_entity(A{}, C{});
+  world.add_entity(A{}, B{}, C{});
+  world.add_entity(B{}, C{});
 
+  {
+    int count = 0;
+    auto lambda = [&count](World::Entity<C>&) { ++count; };
+    world.each<C>(lambda);
+    EXPECT_EQ(5, count);
+  }
+  {
+    int count = 0;
+    auto lambda = [&count](World::Entity<A>&) { ++count; };
+    world.each<A>(lambda);
+    EXPECT_EQ(2, count);
+  }
+  {
+    int count = 0;
+    auto lambda = [&count](World::Entity<B>&) { ++count; };
+    world.each<B>(lambda);
+    EXPECT_EQ(2, count);
+  }
+  {
+    auto lambda = [](World::Entity<B, C>& entity) { entity.remove(); };
+    world.each<B, C>(lambda);
+  }
   {
     int count = 0;
     auto lambda = [&count](World::Entity<C>&) { ++count; };
@@ -88,13 +112,9 @@ TEST(World, RemoveEntity) {
     EXPECT_EQ(3, count);
   }
   {
-    auto lambda = [](World::Entity<A>& entity) { entity.remove(); };
-    world.each<A>(lambda);
-  }
-  {
     int count = 0;
-    auto lambda = [&count](World::Entity<C>&) { ++count; };
-    world.each<C>(lambda);
-    EXPECT_EQ(2, count);
+    auto lambda = [&count](World::Entity<A>&) { ++count; };
+    world.each<A>(lambda);
+    EXPECT_EQ(1, count);
   }
 }

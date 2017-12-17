@@ -42,9 +42,8 @@ class World {
   template <typename... Components>
   class Entity {
    public:
-    Entity(World<AllComponents...>* world,
-           std::tuple<MovablePointee<WithIndexTag<Components>>*...>* components)
-        : this_(world), components_(components) {}
+    Entity(std::tuple<MovablePointee<WithIndexTag<Components>>*...>* components)
+        : components_(components) {}
 
     template <typename T>
     T& get() {
@@ -53,28 +52,34 @@ class World {
           ->component;
     }
 
-    void remove() {
-      this_->remove(reinterpret_cast<MovablePointee<IndexTag>*>(
-          std::get<0>(*components_)));
-    }
+    void remove() { remove_ = true; }
+    bool remove_ = false;
 
    private:
-    World<AllComponents...>* this_;
     std::tuple<MovablePointee<WithIndexTag<Components>>*...>* components_;
   };
 
   template <typename Component, typename... Components, typename Lambda>
   void each(Lambda f) {
-    for (auto& component : std::get<index<Component>()>(components_)) {
+    auto& component_vec = std::get<index<Component>()>(components_);
+    auto it = component_vec.begin();
+    while (it != component_vec.end()) {
+      auto& component = *it;
       std::tuple<MovablePointee<WithIndexTag<Component>>*,
                  MovablePointee<WithIndexTag<Components>>*...>
           components;
       std::get<0>(components) = &component;
-      if (each_helper<decltype(components), Components...>(components,
-                                                           &component->next)) {
-        Entity<Component, Components...> entity(this, &components);
+      if (each_helper<decltype(components), 1, Components...>(
+              components, &component->next)) {
+        Entity<Component, Components...> entity(&components);
         f(entity);
+        if (entity.remove_) {
+          remove(reinterpret_cast<MovablePointee<IndexTag>*>(
+              std::get<0>(components)));
+          continue;
+        }
       }
+      ++it;
     }
   }
 
@@ -149,18 +154,19 @@ class World {
     return add_entity_helper<index<Component>() + 1>(as_tag, components...);
   }
 
-  template <typename Entity>
+  template <typename Entity, std::size_t TupleIndex>
   bool each_helper(Entity&, MovablePointer<IndexTag>*) {
     return true;
   }
-  template <typename Entity, typename Component, typename... Components>
+  template <typename Entity, std::size_t TupleIndex, typename Component,
+            typename... Components>
   bool each_helper(Entity& e, MovablePointer<IndexTag>* p) {
     if ((*p)->index != index<Component>()) {
       return false;
     }
-    std::get<index<Component>()>(e) =
+    std::get<TupleIndex>(e) =
         reinterpret_cast<MovablePointee<WithIndexTag<Component>>*>(p);
-    return each_helper(e, &(*p)->next);
+    return each_helper<Entity, TupleIndex + 1, Components...>(e, &(*p)->next);
   }
 
   std::tuple<std::vector<MovablePointee<WithIndexTag<AllComponents>>>...>
