@@ -30,19 +30,19 @@ TEST(World, Each) {
 
   {
     int count = 0;
-    auto lambda = [&count](World::Entity<A, B>&) { ++count; };
+    auto lambda = [&count](World::Entity&) { ++count; };
     world.each<A, B>(lambda);
     EXPECT_EQ(1, count);
   }
   {
     int count = 0;
-    auto lambda = [&count](World::Entity<A>&) { ++count; };
+    auto lambda = [&count](World::Entity&) { ++count; };
     world.each<A>(lambda);
     EXPECT_EQ(2, count);
   }
   {
     int count = 0;
-    auto lambda = [&count](World::Entity<B>&) { ++count; };
+    auto lambda = [&count](World::Entity&) { ++count; };
     world.each<B>(lambda);
     EXPECT_EQ(2, count);
   }
@@ -61,7 +61,7 @@ TEST(World, EachWithState) {
   world.add_entity(C{});
 
   int count = 0;
-  auto lambda = [&count](World::Entity<C>& entity) {
+  auto lambda = [&count](World::Entity& entity) {
     int& c = entity.get<C>().c;
     EXPECT_EQ(count, c);
     ++c;
@@ -85,35 +85,35 @@ TEST(World, RemoveEntity) {
 
   {
     int count = 0;
-    auto lambda = [&count](World::Entity<C>&) { ++count; };
+    auto lambda = [&count](World::Entity&) { ++count; };
     world.each<C>(lambda);
     EXPECT_EQ(5, count);
   }
   {
     int count = 0;
-    auto lambda = [&count](World::Entity<A>&) { ++count; };
+    auto lambda = [&count](World::Entity&) { ++count; };
     world.each<A>(lambda);
     EXPECT_EQ(2, count);
   }
   {
     int count = 0;
-    auto lambda = [&count](World::Entity<B>&) { ++count; };
+    auto lambda = [&count](World::Entity&) { ++count; };
     world.each<B>(lambda);
     EXPECT_EQ(2, count);
   }
   {
-    auto lambda = [](World::Entity<B, C>& entity) { entity.remove(); };
+    auto lambda = [](World::Entity& entity) { entity.remove(); };
     world.each<B, C>(lambda);
   }
   {
     int count = 0;
-    auto lambda = [&count](World::Entity<C>&) { ++count; };
+    auto lambda = [&count](World::Entity&) { ++count; };
     world.each<C>(lambda);
     EXPECT_EQ(3, count);
   }
   {
     int count = 0;
-    auto lambda = [&count](World::Entity<A>&) { ++count; };
+    auto lambda = [&count](World::Entity&) { ++count; };
     world.each<A>(lambda);
     EXPECT_EQ(1, count);
   }
@@ -125,9 +125,9 @@ TEST(World, AddEntityWhileIterating) {
 
   world.add_entity(C{});
 
-  world.each<C>([&](World::Entity<C>&) { world.add_entity(A{}, B{}); });
+  world.each<C>([&](World::Entity&) { world.add_entity(A{}, B{}); });
   int count = 0;
-  world.each<A, B>([&](World::Entity<A, B>&) { ++count; });
+  world.each<A, B>([&](World::Entity&) { ++count; });
   EXPECT_EQ(1, count);
 }
 
@@ -143,7 +143,7 @@ TEST(World, AsanRepro) {
   typedef World<P, V> World;
   World world;
   world.add_entity(P{}, V{});
-  world.each<P, V>([](World::Entity<P, V>& e) {
+  world.each<P, V>([](World::Entity& e) {
     auto& p = e.get<P>();
     auto& v = e.get<V>();
     if (p.x == v.x) {
