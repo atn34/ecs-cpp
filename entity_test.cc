@@ -263,3 +263,16 @@ TEST(World, GetAndRemove) {
     EXPECT_EQ(1, count);
   }
 }
+
+TEST(World, CornerCases) {
+  typedef World<A, B, C> World;
+  World world;
+
+  world.add_entity(A{}, B{}, C{});
+  world.each<A, C>([](World::Entity& e) {
+    e.getOrAdd<A>();
+    e.remove<A>();
+    e.remove<A>();
+    e.removeAll();
+  });
+}
