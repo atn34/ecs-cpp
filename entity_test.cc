@@ -276,3 +276,14 @@ TEST(World, CornerCases) {
     e.removeAll();
   });
 }
+
+TEST(World, DoubleRemoveAll) {
+  typedef World<A> World;
+  World world;
+
+  world.add_entity(A{});
+  world.each<A>([](World::Entity& e) {
+    e.removeAll();
+    e.removeAll();
+  });
+}

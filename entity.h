@@ -130,6 +130,7 @@ class World {
 
     void remove_one(identity<0>, MovablePointee<IndexTag>* p) {
       assert((*p)->index == 0);
+      entity_tmp_[0] = nullptr;
       auto& component_vec = std::get<0>(*components_);
       auto& top = component_vec.back();
       using std::swap;
@@ -145,6 +146,7 @@ class World {
         using std::swap;
         swap(top, reinterpret_cast<decltype(top)>(*p));
         component_vec.pop_back();
+        entity_tmp_[Index] = nullptr;
       } else {
         remove_one(identity<Index - 1>{}, p);
       }
