@@ -12,6 +12,15 @@ TEST(Templates, TypeIndex) {
   EXPECT_EQ(1, world.index<B>());
 }
 
+TEST(World, Empty) {
+  typedef World<A> World;
+  World world;
+  int count = 0;
+  auto lambda = [&count](World::Entity&) { ++count; };
+  world.each<A>(lambda);
+  EXPECT_EQ(0, count);
+}
+
 TEST(World, AddEntity) {
   World<A, B> world;
 
@@ -102,7 +111,7 @@ TEST(World, RemoveEntity) {
     EXPECT_EQ(2, count);
   }
   {
-    auto lambda = [](World::Entity& entity) { entity.remove(); };
+    auto lambda = [](World::Entity& entity) { entity.removeAll(); };
     world.each<B, C>(lambda);
   }
   {
@@ -149,4 +158,82 @@ TEST(World, AsanRepro) {
     if (p.x == v.x) {
     }
   });
+}
+
+TEST(World, GetOrAdd) {
+  typedef World<A, B> World;
+  World world;
+
+  world.add_entity(B{});
+
+  world.each<B>([](World::Entity& e) { e.getOrAdd<A>(); });
+  {
+    int count = 0;
+    auto lambda = [&count](World::Entity&) { ++count; };
+    world.each<A, B>(lambda);
+    EXPECT_EQ(1, count);
+  }
+}
+
+TEST(World, GetOrAdd2) {
+  typedef World<A, B, C> World;
+  World world;
+
+  world.add_entity(A{});
+
+  world.each<A>([](World::Entity& e) { e.getOrAdd<C>(); });
+  world.each<C>([](World::Entity& e) { e.getOrAdd<B>(); });
+  {
+    int count = 0;
+    auto lambda = [&count](World::Entity&) { ++count; };
+    world.each<A, B, C>(lambda);
+    EXPECT_EQ(1, count);
+  }
+}
+
+TEST(World, Remove) {
+  typedef World<A, B, C> World;
+  World world;
+
+  world.add_entity(A{}, B{}, C{});
+
+  {
+    int count = 0;
+    auto lambda = [&count](World::Entity&) { ++count; };
+    world.each<A, B, C>(lambda);
+    EXPECT_EQ(1, count);
+  }
+  world.each<A, B, C>([](World::Entity& e) { e.remove<C>(); });
+  {
+    int count = 0;
+    auto lambda = [&count](World::Entity&) { ++count; };
+    world.each<A, B, C>(lambda);
+    EXPECT_EQ(0, count);
+  }
+  {
+    int count = 0;
+    auto lambda = [&count](World::Entity&) { ++count; };
+    world.each<B>(lambda);
+    EXPECT_EQ(1, count);
+  }
+  world.each<A>([](World::Entity& e) { e.remove<B>(); });
+  {
+    int count = 0;
+    auto lambda = [&count](World::Entity&) { ++count; };
+    world.each<B>(lambda);
+    EXPECT_EQ(0, count);
+  }
+  {
+    int count = 0;
+    auto lambda = [&count](World::Entity&) { ++count; };
+    world.each<A>(lambda);
+    EXPECT_EQ(1, count);
+  }
+  world.each<A>([](World::Entity& e) { e.remove<A>(); });
+  {
+    int count = 0;
+    auto lambda = [&count](World::Entity&) { ++count; };
+    world.each<A>(lambda);
+    EXPECT_EQ(0, count);
+  }
 }

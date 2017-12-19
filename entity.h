@@ -44,8 +44,11 @@ class World {
 
   class Entity {
    public:
-    Entity(std::vector<MovablePointee<IndexTag>*>& entity_tmp)
-        : entity_tmp_(entity_tmp) {}
+    Entity(
+        std::tuple<std::vector<MovablePointee<WithIndexTag<AllComponents>>>...>*
+            components,
+        std::vector<MovablePointee<IndexTag>*>& entity_tmp)
+        : components_(components), entity_tmp_(entity_tmp) {}
 
     template <typename T>
     T& get() {
@@ -54,10 +57,100 @@ class World {
           ->component;
     }
 
-    void remove() { remove_ = true; }
-    bool remove_ = false;
+    template <typename T>
+    T& getOrAdd() {
+      if (entity_tmp_[Index<T, AllComponents...>::value] != nullptr) {
+        return reinterpret_cast<MovablePointee<WithIndexTag<T>>&>(
+                   *entity_tmp_[Index<T, AllComponents...>::value])
+            ->component;
+      } else {
+        auto& component_vec =
+            std::get<Index<T, AllComponents...>::value>(*components_);
+        component_vec.push_back({});
+        auto& with_index_tag = component_vec.back();
+        with_index_tag->component = {};
+        with_index_tag->index = Index<T, AllComponents...>::value;
+        auto* as_tag =
+            reinterpret_cast<MovablePointee<IndexTag>*>(&with_index_tag);
+        with_index_tag->next = as_tag;
+        int prev_index = Index<T, AllComponents...>::value;
+        while (entity_tmp_[prev_index] == nullptr) {
+          prev_index = (prev_index - 1 + sizeof...(AllComponents)) %
+                       sizeof...(AllComponents);
+        }
+        using std::swap;
+        swap(with_index_tag->next, (*entity_tmp_[prev_index])->next);
+        entity_tmp_[Index<T, AllComponents...>::value] = as_tag;
+        return with_index_tag->component;
+      }
+    }
+
+    template <typename T>
+    void remove() {
+      if (entity_tmp_[Index<T, AllComponents...>::value] == nullptr) {
+        return;
+      }
+      auto& with_index_tag =
+          *reinterpret_cast<MovablePointee<WithIndexTag<T>>*>(
+              entity_tmp_[Index<T, AllComponents...>::value]);
+      auto& component_vec =
+          std::get<Index<T, AllComponents...>::value>(*components_);
+      int prev_index = Index<T, AllComponents...>::value;
+      do {
+        prev_index = (prev_index - 1 + sizeof...(AllComponents)) %
+                     sizeof...(AllComponents);
+      } while (entity_tmp_[prev_index] == nullptr);
+      using std::swap;
+      swap(with_index_tag->next, (*entity_tmp_[prev_index])->next);
+      swap(with_index_tag, component_vec.back());
+      component_vec.pop_back();
+      entity_tmp_[Index<T, AllComponents...>::value] = nullptr;
+    }
+
+    void removeAll() {
+      auto it = std::find_if(
+          entity_tmp_.begin(), entity_tmp_.end(),
+          [](MovablePointee<IndexTag>* p) { return p != nullptr; });
+      if (it == entity_tmp_.end()) {
+        return;
+      }
+      auto first = *it;
+      while (first != nullptr) {
+        MovablePointer<IndexTag> next;
+        using std::swap;
+        swap(next, (*first)->next);
+        remove_one(identity<sizeof...(AllComponents) - 1>{}, first);
+        first = next.pointer();
+      }
+    }
 
    private:
+    template <std::size_t t>
+    struct identity {};
+
+    void remove_one(identity<0>, MovablePointee<IndexTag>* p) {
+      assert((*p)->index == 0);
+      auto& component_vec = std::get<0>(*components_);
+      auto& top = component_vec.back();
+      using std::swap;
+      swap(top, reinterpret_cast<decltype(top)>(*p));
+      component_vec.pop_back();
+    }
+
+    template <std::size_t Index>
+    void remove_one(identity<Index>, MovablePointee<IndexTag>* p) {
+      if ((*p)->index == Index) {
+        auto& component_vec = std::get<Index>(*components_);
+        auto& top = component_vec.back();
+        using std::swap;
+        swap(top, reinterpret_cast<decltype(top)>(*p));
+        component_vec.pop_back();
+      } else {
+        remove_one(identity<Index - 1>{}, p);
+      }
+    }
+    std::tuple<std::vector<MovablePointee<WithIndexTag<AllComponents>>>...>*
+        components_;
     std::vector<MovablePointee<IndexTag>*>& entity_tmp_;
   };
 
@@ -65,19 +158,20 @@ class World {
   void each(Lambda f) {
     auto& component_vec = std::get<index<Component>()>(components_);
     auto it = component_vec.begin();
+    size_t last_size = component_vec.size();
     while (it != component_vec.end()) {
       entity_tmp_.clear();
       entity_tmp_.resize(sizeof...(AllComponents));
       auto& component = *it;
       bool matches = false;
-      each_helper<0, Component, Components...>(
-          reinterpret_cast<MovablePointee<IndexTag>*>(&component), &matches);
+      auto* first_in_query =
+          reinterpret_cast<MovablePointee<IndexTag>*>(&component);
+      each_helper<0, Component, Components...>(first_in_query, &matches);
       if (matches) {
-        Entity entity(entity_tmp_);
+        Entity entity(&components_, entity_tmp_);
         f(entity);
-        if (entity.remove_) {
-          remove(reinterpret_cast<MovablePointee<IndexTag>*>(
-              entity_tmp_[index<Component>()]));
+        if (component_vec.size() < last_size) {
+          --last_size;
           continue;
         }
       }
@@ -91,41 +185,6 @@ class World {
   }
 
  private:
-  template <std::size_t t>
-  struct identity {};
-
-  void remove(MovablePointee<IndexTag>* first) {
-    while (first != nullptr) {
-      MovablePointer<IndexTag> next;
-      using std::swap;
-      swap(next, (*first)->next);
-      remove_helper(identity<sizeof...(AllComponents) - 1>{}, first);
-      first = next.pointer();
-    }
-  }
-
-  void remove_helper(identity<0>, MovablePointee<IndexTag>* p) {
-    assert((*p)->index == 0);
-    auto& component_vec = std::get<0>(components_);
-    auto& top = component_vec.back();
-    using std::swap;
-    swap(top, reinterpret_cast<decltype(top)>(*p));
-    component_vec.pop_back();
-  }
-
-  template <std::size_t Index>
-  void remove_helper(identity<Index>, MovablePointee<IndexTag>* p) {
-    if ((*p)->index == Index) {
-      auto& component_vec = std::get<Index>(components_);
-      auto& top = component_vec.back();
-      using std::swap;
-      swap(top, reinterpret_cast<decltype(top)>(*p));
-      component_vec.pop_back();
-    } else {
-      remove_helper(identity<Index - 1>{}, p);
-    }
-  }
-
   template <std::size_t PreviousIndex>
   MovablePointee<IndexTag>* add_entity_helper(MovablePointee<IndexTag>* prev) {
     return prev;
