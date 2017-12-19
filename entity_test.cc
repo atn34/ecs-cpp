@@ -237,3 +237,29 @@ TEST(World, Remove) {
     EXPECT_EQ(0, count);
   }
 }
+
+TEST(World, GetAndRemove) {
+  typedef World<A, B, C> World;
+  World world;
+
+  world.add_entity(A{});
+
+  world.each<A>([](World::Entity& e) {
+    e.getOrAdd<B>();
+    e.remove<A>();
+  });
+  world.each<B>([](World::Entity& e) {
+    e.getOrAdd<C>();
+    e.remove<B>();
+  });
+  world.each<C>([](World::Entity& e) {
+    e.getOrAdd<A>();
+    e.remove<C>();
+  });
+  {
+    int count = 0;
+    auto lambda = [&count](World::Entity&) { ++count; };
+    world.each<A>(lambda);
+    EXPECT_EQ(1, count);
+  }
+}
