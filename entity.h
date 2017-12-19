@@ -69,8 +69,10 @@ class World {
       entity_tmp_.clear();
       entity_tmp_.resize(sizeof...(AllComponents));
       auto& component = *it;
-      if (each_helper<1, Component, Components...>(
-              reinterpret_cast<MovablePointee<IndexTag>*>(&component))) {
+      bool matches = false;
+      each_helper<0, Component, Components...>(
+          reinterpret_cast<MovablePointee<IndexTag>*>(&component), &matches);
+      if (matches) {
         Entity entity(entity_tmp_);
         f(entity);
         if (entity.remove_) {
@@ -154,17 +156,30 @@ class World {
     return add_entity_helper<index<Component>() + 1>(as_tag, components...);
   }
 
-  template <std::size_t TupleIndex>
-  bool each_helper(MovablePointee<IndexTag>*) {
-    return true;
-  }
-  template <std::size_t TupleIndex, typename Component, typename... Components>
-  bool each_helper(MovablePointee<IndexTag>* p) {
-    if ((*p)->index != index<Component>()) {
-      return false;
+  template <std::size_t Dummy>
+  void each_helper(MovablePointee<IndexTag>* p, bool* matches) {
+    *matches = true;
+    if (entity_tmp_[(*p)->index] != nullptr) {
+      return;
     }
-    entity_tmp_[index<Component>()] = p;
-    return each_helper<TupleIndex + 1, Components...>((*p)->next.pointer());
+    entity_tmp_[(*p)->index] = p;
+    return each_helper<Dummy>((*p)->next.pointer(), matches);
+  }
+  template <std::size_t Dummy, typename Component, typename... Components>
+  void each_helper(MovablePointee<IndexTag>* p, bool* matches) {
+    if (entity_tmp_[(*p)->index] != nullptr) {
+      return;
+    }
+    entity_tmp_[(*p)->index] = p;
+    int x = index<Component>();
+    if (x) {
+    }
+    if ((*p)->index == index<Component>()) {
+      return each_helper<Dummy, Components...>((*p)->next.pointer(), matches);
+    } else {
+      return each_helper<Dummy, Component, Components...>((*p)->next.pointer(),
+                                                          matches);
+    }
   }
 
   std::tuple<std::vector<MovablePointee<WithIndexTag<AllComponents>>>...>
