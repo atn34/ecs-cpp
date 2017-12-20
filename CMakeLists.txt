@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 project (turtle)
-set (CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wextra -Werror -Wshadow -Wnon-virtual-dtor -pedantic -g -fsanitize=address -fno-omit-frame-pointer")
+set (CMAKE_CXX_FLAGS "-I${CMAKE_CURRENT_SOURCE_DIR} -coverage -std=c++11 -Wall -Wextra -Werror -Wshadow -Wnon-virtual-dtor -pedantic -g -fsanitize=address -fno-omit-frame-pointer")
 
 add_executable(turtle demo.cc)
 target_link_libraries (turtle -lsfml-graphics -lsfml-window -lsfml-system)
