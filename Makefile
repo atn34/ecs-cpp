@@ -2,6 +2,7 @@
 .PHONY: test
 .PHONY: coverage
 .PHONY: clean
+.PHONY: bench
 
 build:
 	mkdir -p build && cd build && cmake -G Ninja .. && ninja
@@ -14,3 +15,6 @@ coverage:
 
 clean:
 	git clean -Xf && rm -rf out build
+
+bench:
+	build/benchmark
