@@ -226,7 +226,7 @@ class World {
       return;
     }
     entity_tmp_[(*p)->index] = p;
-    return each_helper<Dummy>((*p)->next.pointer(), matches);
+    each_helper<Dummy>((*p)->next.pointer(), matches);
   }
   template <std::size_t Dummy, typename Component, typename... Components>
   void each_helper(MovablePointee<IndexTag>* p, bool* matches) {
@@ -234,14 +234,11 @@ class World {
       return;
     }
     entity_tmp_[(*p)->index] = p;
-    int x = index<Component>();
-    if (x) {
-    }
     if ((*p)->index == index<Component>()) {
-      return each_helper<Dummy, Components...>((*p)->next.pointer(), matches);
+      each_helper<Dummy, Components...>((*p)->next.pointer(), matches);
     } else {
-      return each_helper<Dummy, Component, Components...>((*p)->next.pointer(),
-                                                          matches);
+      each_helper<Dummy, Component, Components...>((*p)->next.pointer(),
+                                                   matches);
     }
   }
 
