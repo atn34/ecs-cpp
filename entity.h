@@ -97,13 +97,9 @@ class World {
               entity_tmp_[Index<T, AllComponents...>::value]);
       auto& component_vec =
           std::get<Index<T, AllComponents...>::value>(*components_);
-      int prev_index = Index<T, AllComponents...>::value;
-      do {
-        prev_index = (prev_index - 1 + sizeof...(AllComponents)) %
-                     sizeof...(AllComponents);
-      } while (entity_tmp_[prev_index] == nullptr);
       using std::swap;
-      swap(with_index_tag->next, (*entity_tmp_[prev_index])->next);
+      swap(with_index_tag->next,
+           *entity_tmp_[Index<T, AllComponents...>::value]->return_address());
       swap(with_index_tag, component_vec.back());
       component_vec.pop_back();
       entity_tmp_[Index<T, AllComponents...>::value] = nullptr;
