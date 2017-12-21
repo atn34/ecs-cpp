@@ -39,7 +39,7 @@ int main() {
   sf::RenderWindow window(sf::VideoMode(800, 600), "My window");
 
   sf::Texture texture;
-  if (!texture.loadFromFile("../Box-Turtle-Transparent-PNG.png")) {
+  if (!texture.loadFromFile("Box-Turtle-Transparent-PNG.png")) {
     return 1;
   }
   sf::Sprite sprite;
