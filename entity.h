@@ -47,8 +47,11 @@ class World {
     Entity(
         std::tuple<std::vector<MovablePointee<WithIndexTag<AllComponents>>>...>*
             components,
-        std::vector<MovablePointee<IndexTag>*>& entity_tmp)
-        : components_(components), entity_tmp_(entity_tmp) {}
+        std::vector<MovablePointee<IndexTag>*>& entity_tmp,
+        MovablePointee<IndexTag>* some_component)
+        : components_(components),
+          entity_tmp_(entity_tmp),
+          some_component_(some_component) {}
 
     template <typename T>
     T* get() {
@@ -92,6 +95,13 @@ class World {
       if (entity_tmp_[Index<T, AllComponents...>::value] == nullptr) {
         return;
       }
+      if (some_component_ == entity_tmp_[Index<T, AllComponents...>::value]) {
+        if ((*some_component_)->next.pointer() == some_component_) {
+          some_component_ = nullptr;
+        } else {
+          some_component_ = (*some_component_)->next.pointer();
+        }
+      }
       auto& with_index_tag =
           *reinterpret_cast<MovablePointee<WithIndexTag<T>>*>(
               entity_tmp_[Index<T, AllComponents...>::value]);
@@ -106,19 +116,12 @@ class World {
     }
 
     void removeAll() {
-      auto it = std::find_if(
-          entity_tmp_.begin(), entity_tmp_.end(),
-          [](MovablePointee<IndexTag>* p) { return p != nullptr; });
-      if (it == entity_tmp_.end()) {
-        return;
-      }
-      auto first = *it;
-      while (first != nullptr) {
+      while (some_component_ != nullptr) {
         MovablePointer<IndexTag> next;
         using std::swap;
-        swap(next, (*first)->next);
-        remove_one(identity<sizeof...(AllComponents) - 1>{}, first);
-        first = next.pointer();
+        swap(next, (*some_component_)->next);
+        remove_one(identity<sizeof...(AllComponents) - 1>{}, some_component_);
+        some_component_ = next.pointer();
       }
     }
 
@@ -152,6 +155,7 @@ class World {
     std::tuple<std::vector<MovablePointee<WithIndexTag<AllComponents>>>...>*
         components_;
     std::vector<MovablePointee<IndexTag>*>& entity_tmp_;
+    MovablePointee<IndexTag>* some_component_;
   };
 
   template <typename Component, typename... Components, typename Lambda>
@@ -168,7 +172,7 @@ class World {
           reinterpret_cast<MovablePointee<IndexTag>*>(&component);
       each_helper<0, Component, Components...>(first_in_query, &matches);
       if (matches) {
-        Entity entity(&components_, entity_tmp_);
+        Entity entity(&components_, entity_tmp_, first_in_query);
         f(entity);
         if (component_vec.size() < last_size) {
           --last_size;
