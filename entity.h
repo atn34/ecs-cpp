@@ -51,10 +51,12 @@ class World {
         : components_(components), entity_tmp_(entity_tmp) {}
 
     template <typename T>
-    T& get() {
-      return reinterpret_cast<MovablePointee<WithIndexTag<T>>&>(
-                 *entity_tmp_[Index<T, AllComponents...>::value])
-          ->component;
+    T* get() {
+      return entity_tmp_[Index<T, AllComponents...>::value] == nullptr
+                 ? nullptr
+                 : &reinterpret_cast<MovablePointee<WithIndexTag<T>>&>(
+                        *entity_tmp_[Index<T, AllComponents...>::value])
+                        ->component;
     }
 
     template <typename T>

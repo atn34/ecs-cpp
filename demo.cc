@@ -66,26 +66,25 @@ int main() {
     window.clear(sf::Color::Black);
 
     world.each<Position, Velocity>([&](MyWorld::Entity& e) {
-      auto& p = e.get<Position>();
-      auto& v = e.get<Velocity>();
-      p.x += v.dx;
-      p.y += v.dy;
+      auto* p = e.get<Position>();
+      auto* v = e.get<Velocity>();
+      p->x += v->dx;
+      p->y += v->dy;
     });
 
     world.each<DelayedAction>([&](MyWorld::Entity& e) {
-      auto& d = e.get<DelayedAction>();
-      if (!d.loops--) {
-        auto copied = d;
+      auto* d = e.get<DelayedAction>();
+      if (!d->loops--) {
         e.remove<DelayedAction>();
-        d.action(e);
+        d->action(e);
       }
     });
 
     world.each<Drawable, Position>([&](MyWorld::Entity& e) {
-      auto& p = e.get<Position>();
-      auto& d = e.get<Drawable>();
-      d.sprite->setPosition(p.x, p.y);
-      window.draw(*e.get<Drawable>().sprite);
+      auto* p = e.get<Position>();
+      auto* d = e.get<Drawable>();
+      d->sprite->setPosition(p->x, p->y);
+      window.draw(*e.get<Drawable>()->sprite);
     });
 
     // end the current frame

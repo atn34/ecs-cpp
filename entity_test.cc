@@ -71,7 +71,7 @@ TEST(World, EachWithState) {
 
   int count = 0;
   auto lambda = [&count](World::Entity& entity) {
-    int& c = entity.get<C>().c;
+    int& c = entity.get<C>()->c;
     EXPECT_EQ(count, c);
     ++c;
   };
@@ -153,9 +153,9 @@ TEST(World, AsanRepro) {
   World world;
   world.add_entity(P{}, V{});
   world.each<P, V>([](World::Entity& e) {
-    auto& p = e.get<P>();
-    auto& v = e.get<V>();
-    if (p.x == v.x) {
+    auto* p = e.get<P>();
+    auto* v = e.get<V>();
+    if (p->x == v->x) {
     }
   });
 }
