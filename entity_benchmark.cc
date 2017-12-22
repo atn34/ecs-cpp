@@ -33,6 +33,19 @@ static void BM_IterateOneComponentAtATime(benchmark::State& state) {
   }
 }
 
+static void BM_RemoveWithDistantPrev(benchmark::State& state) {
+  typedef World<A, B, C, D, E, F, G, H, I, J> World;
+  World world;
+  for (int i = 0; i < state.range(0); ++i) {
+    world.add_entity(A{}, J{});
+  }
+  for (auto _ : state) {
+    world.each<J>([](World::Entity& e) { e.remove<J>(); });
+    world.each<A>([](World::Entity& e) { e.getOrAdd<J>(); });
+  }
+}
+
 BENCHMARK(BM_IterateOneComponentAtATime)->Range(8, 8 << 10);
+BENCHMARK(BM_RemoveWithDistantPrev)->Range(8, 8 << 10);
 
 BENCHMARK_MAIN();
