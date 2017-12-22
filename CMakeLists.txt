@@ -5,7 +5,7 @@ set (CMAKE_CXX_FLAGS "-I${CMAKE_CURRENT_SOURCE_DIR} -g -std=c++11 -Wall -Wextra 
 add_executable(turtle demo.cc)
 target_link_libraries(turtle -lsfml-graphics -lsfml-window -lsfml-system)
 
-add_executable(unit_tests movable_pointer_test.cc entity_test.cc)
+add_executable(unit_tests movable_pointer_test.cc entity_test.cc circular_interval_test.cc)
 target_compile_options(unit_tests PUBLIC -coverage -fsanitize=address -fno-omit-frame-pointer)
 target_link_libraries(unit_tests -lasan -lgmock_main -lpthread -coverage)
 

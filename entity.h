@@ -4,6 +4,7 @@
 #include <tuple>
 #include <vector>
 
+#include "circular_interval.h"
 #include "movable_pointer.h"
 
 // From
@@ -37,17 +38,29 @@ class World {
     EntityTmpStorage(std::size_t size) : component_pointers_(size) {}
 
     MovablePointee<IndexTag>*& operator[](std::size_t index) {
+      while (!valid_interval_.contains(index)) {
+        std::size_t highest_valid_index = (*next_)->index;
+        for (std::size_t i = (valid_interval_.start + valid_interval_.length) %
+                             valid_interval_.modulus;
+             i != highest_valid_index; i = (i + 1) % valid_interval_.modulus) {
+          component_pointers_[i] = nullptr;
+        }
+        component_pointers_[highest_valid_index] = next_;
+        valid_interval_.expand(highest_valid_index);
+        next_ = (*next_)->next.pointer();
+      }
       return component_pointers_[index];
     }
 
-    void Clear() {
-      for (auto& p : component_pointers_) {
-        p = nullptr;
-      }
+    void Initialize(MovablePointee<IndexTag>* next) {
+      next_ = next;
+      valid_interval_ = {component_pointers_.size(), (*next_)->index, 0};
     }
 
    private:
     std::vector<MovablePointee<IndexTag>*> component_pointers_;
+    CircularInterval valid_interval_{};
+    MovablePointee<IndexTag>* next_;
   };
 
  public:
@@ -185,10 +198,10 @@ class World {
       bool matches = false;
       auto* first_in_query =
           reinterpret_cast<MovablePointee<IndexTag>*>(&component);
-      entity_tmp_.Clear();
-      each_helper<0, Component, Components...>(first_in_query, &matches);
+      entity_tmp_.Initialize(first_in_query);
+      Entity entity(&components_, entity_tmp_, first_in_query);
+      match_helper<0, Components...>(entity, &matches);
       if (matches) {
-        Entity entity(&components_, entity_tmp_, first_in_query);
         f(entity);
         if (component_vec.size() < last_size) {
           --last_size;
@@ -236,25 +249,13 @@ class World {
   }
 
   template <std::size_t Dummy>
-  void each_helper(MovablePointee<IndexTag>* p, bool* matches) {
+  void match_helper(Entity&, bool* matches) {
     *matches = true;
-    if (entity_tmp_[(*p)->index] != nullptr) {
-      return;
-    }
-    entity_tmp_[(*p)->index] = p;
-    each_helper<Dummy>((*p)->next.pointer(), matches);
   }
   template <std::size_t Dummy, typename Component, typename... Components>
-  void each_helper(MovablePointee<IndexTag>* p, bool* matches) {
-    if (entity_tmp_[(*p)->index] != nullptr) {
-      return;
-    }
-    entity_tmp_[(*p)->index] = p;
-    if ((*p)->index == index<Component>()) {
-      each_helper<Dummy, Components...>((*p)->next.pointer(), matches);
-    } else {
-      each_helper<Dummy, Component, Components...>((*p)->next.pointer(),
-                                                   matches);
+  void match_helper(Entity& e, bool* matches) {
+    if (e.template get<Component>() != nullptr) {
+      match_helper<Dummy, Components...>(e, matches);
     }
   }
 
