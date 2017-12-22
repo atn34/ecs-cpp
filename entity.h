@@ -32,6 +32,24 @@ class World {
     T component;
   };
 
+  class EntityTmpStorage {
+   public:
+    EntityTmpStorage(std::size_t size) : component_pointers_(size) {}
+
+    MovablePointee<IndexTag>*& operator[](std::size_t index) {
+      return component_pointers_[index];
+    }
+
+    void Clear() {
+      for (auto& p : component_pointers_) {
+        p = nullptr;
+      }
+    }
+
+   private:
+    std::vector<MovablePointee<IndexTag>*> component_pointers_;
+  };
+
  public:
   World() : entity_tmp_(sizeof...(AllComponents)) {}
 
@@ -47,8 +65,7 @@ class World {
     Entity(
         std::tuple<std::vector<MovablePointee<WithIndexTag<AllComponents>>>...>*
             components,
-        std::vector<MovablePointee<IndexTag>*>& entity_tmp,
-        MovablePointee<IndexTag>* some_component)
+        EntityTmpStorage& entity_tmp, MovablePointee<IndexTag>* some_component)
         : components_(components),
           entity_tmp_(entity_tmp),
           some_component_(some_component) {}
@@ -154,7 +171,7 @@ class World {
     }
     std::tuple<std::vector<MovablePointee<WithIndexTag<AllComponents>>>...>*
         components_;
-    std::vector<MovablePointee<IndexTag>*>& entity_tmp_;
+    EntityTmpStorage& entity_tmp_;
     MovablePointee<IndexTag>* some_component_;
   };
 
@@ -164,12 +181,11 @@ class World {
     auto it = component_vec.begin();
     size_t last_size = component_vec.size();
     while (it != component_vec.end()) {
-      entity_tmp_.clear();
-      entity_tmp_.resize(sizeof...(AllComponents));
       auto& component = *it;
       bool matches = false;
       auto* first_in_query =
           reinterpret_cast<MovablePointee<IndexTag>*>(&component);
+      entity_tmp_.Clear();
       each_helper<0, Component, Components...>(first_in_query, &matches);
       if (matches) {
         Entity entity(&components_, entity_tmp_, first_in_query);
@@ -244,7 +260,7 @@ class World {
 
   std::tuple<std::vector<MovablePointee<WithIndexTag<AllComponents>>>...>
       components_;
-  std::vector<MovablePointee<IndexTag>*> entity_tmp_;
+  EntityTmpStorage entity_tmp_;
 };
 
 #endif /* ifndef ENTITY_H */
