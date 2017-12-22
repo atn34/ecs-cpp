@@ -63,6 +63,9 @@ class MovablePointee final {
   T* operator->() { return get(); }
   T* get() { return &pointee_; }
 
+  // Only use if you know what you're doing.
+  MovablePointer<T>* return_address() { return return_address_; }
+
  private:
   MovablePointer<T>* return_address_;
   T pointee_;
