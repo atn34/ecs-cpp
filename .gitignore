@@ -43,3 +43,4 @@ coverage.info
 *.gcno
 
 build/
+.gdb_history
