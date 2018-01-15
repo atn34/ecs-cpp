@@ -5,7 +5,7 @@
 .PHONY: bench
 
 build:
-	mkdir -p build && cd build && cmake -G Ninja .. && ninja
+	mkdir -p build && cd build && cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=1 .. && ninja
 
 test:
 	build/unit_tests
